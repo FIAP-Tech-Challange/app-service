@@ -1,0 +1,72 @@
+name: Build and Push to ECR
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push-image:
+    name: Build and Push to ECR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
+
+      - name: Fetch DB Parameters from SSM
+        id: ssm-params
+        run: |
+          PARAMS=$(aws ssm get-parameters --names "/main/rds_endpoint" "main/db_username" "main/db_password" --with-decryption --query "Parameters[].{Name:Name,Value:Value}" --output json)
+          
+          echo "DB_PG_HOST=$(echo $PARAMS | jq -r '.[] | select(.Name=="/main/rds_endpoint") | .Value')" >> $GITHUB_ENV
+          echo "DB_PG_USER=$(echo $PARAMS | jq -r '.[] | select(.Name=="main/db_username") | .Value')" >> $GITHUB_ENV
+          DB_PASS=$(echo $PARAMS | jq -r '.[] | select(.Name=="main/db_password") | .Value')
+          echo "DB_PG_PASSWORD=$DB_PASS" >> $GITHUB_ENV
+          
+          echo "::add-mask::$DB_PASS"
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Define Image Tags
+        id: tags
+        run: |
+          COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          ECR_URL=${{ secrets.ECR_REPOSITORY_URL }} # Usa a URL do repositório a partir dos segredos
+          
+          TAGS="${ECR_URL}:${COMMIT_HASH}"
+          
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAGS="$TAGS,${ECR_URL}:latest,${ECR_URL}:main"
+          fi
+          
+          echo "image_tags=$(echo $TAGS | sed 's/,/ --tag /g')" >> $GITHUB_OUTPUT
+        
+      - name: Build and Push Docker Image
+        run: |
+          echo "Building with tags: --tag ${{ steps.tags.outputs.image_tags }}"
+          
+          docker build \
+            --build-arg DB_PG_HOST=${{ env.DB_PG_HOST }} \
+            --build-arg DB_PG_USER=${{ env.DB_PG_USER }} \
+            --build-arg DB_PG_PASSWORD=${{ env.DB_PG_PASSWORD }} \
+            --build-arg DB_PG_NAME=${{ secrets.DB_PG_NAME }} \
+            --build-arg DB_PG_PORT=${{ secrets.DB_PG_PORT }} \
+            --build-arg API_KEY=${{ secrets.API_KEY }} \
+            --build-arg JWT_ACCESS_TOKEN_EXPIRATION_TIME=${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION_TIME }} \
+            --build-arg JWT_REFRESH_TOKEN_EXPIRATION_TIME=${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION_TIME }} \
+            --tag ${{ steps.tags.outputs.image_tags }} \
+            --push .
