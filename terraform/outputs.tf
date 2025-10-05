@@ -1,9 +1,5 @@
 # Outputs úteis
 
-output "namespace" {
-  description = "Nome do namespace criado"
-  value       = kubernetes_namespace.tech_challenge.metadata[0].name
-}
 
 output "deployment_name" {
   description = "Nome do deployment"

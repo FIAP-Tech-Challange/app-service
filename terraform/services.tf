@@ -2,7 +2,6 @@
 resource "kubernetes_service" "tech_challenge_service" {
   metadata {
     name      = "tech-challenge-service"
-    namespace = kubernetes_namespace.tech_challenge.metadata[0].name
     labels = {
       app         = "tech-challenge"
       environment = "production"
@@ -29,7 +28,6 @@ resource "kubernetes_service" "tech_challenge_service" {
 resource "kubernetes_service" "tech_challenge_loadbalancer" {
   metadata {
     name      = "tech-challenge-loadbalancer"
-    namespace = kubernetes_namespace.tech_challenge.metadata[0].name
     labels = {
       app         = "tech-challenge"
       environment = "production"

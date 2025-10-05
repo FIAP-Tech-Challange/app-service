@@ -2,7 +2,6 @@
 resource "kubernetes_horizontal_pod_autoscaler_v2" "tech_challenge_hpa" {
   metadata {
     name      = "tech-challenge-app-hpa"
-    namespace = kubernetes_namespace.tech_challenge.metadata[0].name
     labels = {
       app         = "tech-challenge"
       environment = "production"

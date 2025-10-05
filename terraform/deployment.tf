@@ -2,7 +2,6 @@
 resource "kubernetes_deployment" "tech_challenge_app" {
   metadata {
     name      = "tech-challenge-app"
-    namespace = kubernetes_namespace.tech_challenge.metadata[0].name
     labels = {
       app         = "tech-challenge"
       environment = "production"
