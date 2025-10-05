@@ -183,10 +183,10 @@ Para deploy completo em Kubernetes, consulte a documentação específica:
 
 A documentação do Kubernetes inclui:
 
-- Configuração de todos os artefatos (Namespace, Secrets, Deployments, Services, HPA)
-- Scripts de automação para deploy e limpeza
-- Guia de troubleshooting e monitoramento
-- Configuração de testes de carga com K6
+- Configuração de todos os artefatos (Namespace, ConfigMap, Secrets, Deployments, Services)
+- Pipeline CI/CD automatizado com GitHub Actions
+- Deploy direto com Kustomize
+- Monitoramento e acesso externo via LoadBalancer
 
 ### 🔄 Ordem de Execução das APIs
 

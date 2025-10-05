@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tech-challenge-config
+  labels:
+    app: tech-challenge
+data:
+  NODE_ENV: "production"
+  DB_PG_LOGGING: "false"
