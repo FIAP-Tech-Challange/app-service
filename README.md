@@ -175,18 +175,19 @@ docker-compose ps
 - **Swagger**: [http://localhost:3000/docs](http://localhost:3000/docs)
 - **Health Check**: [http://localhost:3000/health](http://localhost:3000/health)
 
-### ☸️ Deploy Kubernetes
+### ☸️ Deploy Kubernetes com Terraform
 
-Para deploy completo em Kubernetes, consulte a documentação específica:
+Para deploy completo em Kubernetes usando Terraform, consulte a documentação específica:
 
-**📖 [Documentação Kubernetes](./k8s/README.md)**
+**📖 [Documentação Terraform](./terraform/README.md)**
 
-A documentação do Kubernetes inclui:
+A solução Terraform inclui:
 
-- Configuração de todos os artefatos (Namespace, ConfigMap, Secrets, Deployments, Services)
-- Pipeline CI/CD automatizado com GitHub Actions
-- Deploy direto com Kustomize
-- Monitoramento e acesso externo via LoadBalancer
+- **Infraestrutura como Código**: Versionamento e reprodutibilidade completa
+- **Deploy Automatizado**: Pipeline CI/CD integrado com GitHub Actions
+- **Recursos Kubernetes**: Namespace, ConfigMap, Secrets, Deployment, Services, HPA
+- **Auto Scaling**: HPA configurado para 2-8 pods com métricas de CPU/Memória
+- **LoadBalancer**: Acesso externo via AWS Network Load Balancer
 
 ### 🔄 Ordem de Execução das APIs
 

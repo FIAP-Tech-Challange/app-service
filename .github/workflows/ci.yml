@@ -72,7 +72,7 @@ jobs:
             --push .
 
   deploy-to-eks:
-    name: Deploy to EKS
+    name: Deploy to EKS with Terraform
     runs-on: ubuntu-latest
     needs: build-and-push-image
     if: github.ref == 'refs/heads/main'
@@ -89,137 +89,109 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
-      - name: Fetch DB Parameters from SSM
-        id: ssm-params-deploy
-        run: |
-          echo "🔍 Buscando parâmetros do banco no SSM para deploy..."
-          echo "📋 Parâmetros solicitados:"
-          echo "  • /main/rds_endpoint"
-          echo "  • main/db_username"
-          echo "  • main/db_password"
-          
-          PARAMS=$(aws ssm get-parameters --names "/main/rds_endpoint" "main/db_username" "main/db_password" --with-decryption --query "Parameters[].{Name:Name,Value:Value}" --output json)
-          
-          # Extrair valores
-          DB_HOST=$(echo $PARAMS | jq -r '.[] | select(.Name=="/main/rds_endpoint") | .Value')
-          DB_USER=$(echo $PARAMS | jq -r '.[] | select(.Name=="main/db_username") | .Value')
-          DB_PASS=$(echo $PARAMS | jq -r '.[] | select(.Name=="main/db_password") | .Value')
-          
-          # Definir variáveis de ambiente
-          echo "DB_PG_HOST=$DB_HOST" >> $GITHUB_ENV
-          echo "DB_PG_USER=$DB_USER" >> $GITHUB_ENV
-          echo "DB_PG_PASSWORD=$DB_PASS" >> $GITHUB_ENV
-          
-          echo "::add-mask::$DB_PASS"
-          
-          echo "✅ Parâmetros obtidos do SSM:"
-          echo "  🏛️  DB Host: $DB_HOST"
-          echo "  👤 DB User: $DB_USER"
-          echo "  🔐 DB Password: ${DB_PASS:0:3}***[MASKED]"
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
 
-      - name: Setup Kubernetes Tools
+      - name: Setup kubectl
         run: |
-          # Install kubectl
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
-          
-          # Install kustomize
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-          sudo mv kustomize /usr/local/bin/
-          
-          # Configure kubectl
           aws eks update-kubeconfig --region us-east-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
 
-      - name: Deploy Application
-        env:
-          ECR_REPOSITORY_URL: ${{ secrets.ECR_REPOSITORY_URL }}
-          DB_PG_HOST: ${{ env.DB_PG_HOST }}
-          DB_PG_USER: ${{ env.DB_PG_USER }}
-          DB_PG_PASSWORD: ${{ env.DB_PG_PASSWORD }}
-          DB_PG_NAME: ${{ secrets.DB_PG_NAME }}
-          DB_PG_PORT: ${{ secrets.DB_PG_PORT }}
-          API_KEY: ${{ secrets.API_KEY }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_ACCESS_TOKEN_EXPIRATION_TIME: ${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION_TIME }}
-          JWT_REFRESH_TOKEN_EXPIRATION_TIME: ${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION_TIME }}
+      - name: Terraform Init
         run: |
-          cd k8s
-          
-          echo "🚀 Iniciando deploy da aplicação..."
+          cd terraform
+          echo "🔧 Inicializando Terraform..."
+          terraform init
+          echo "✅ Terraform inicializado"
 
-          echo "📋 Variáveis de configuração:"
-          echo "  🏗️  ECR Repository: $ECR_REPOSITORY_URL"
-          echo "  🏛️  Database Host: $DB_PG_HOST"
-          echo "  👤 Database User: $DB_PG_USER"
-          echo "  � Database Password: ${DB_PG_PASSWORD:0:3}***[MASKED]"
-          echo "  �🗃️  Database Name: $DB_PG_NAME"
-          echo "  🔌 Database Port: $DB_PG_PORT"
-          echo "  🔑 API Key: ${API_KEY:0:8}***[MASKED]"
-          echo "  🔐 JWT Secret: ${JWT_SECRET:0:5}***[MASKED]"
-          echo "  ⏰ JWT Access Token TTL: $JWT_ACCESS_TOKEN_EXPIRATION_TIME"
-          echo "  🔄 JWT Refresh Token TTL: $JWT_REFRESH_TOKEN_EXPIRATION_TIME"
+      - name: Log Terraform Variables
+        env:
+          TF_VAR_eks_cluster_name: ${{ secrets.EKS_CLUSTER_NAME }}
+          TF_VAR_ecr_repository_url: ${{ secrets.ECR_REPOSITORY_URL }}
+          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+          TF_VAR_api_key: ${{ secrets.API_KEY }}
+          TF_VAR_db_pg_name: ${{ secrets.DB_PG_NAME }}
+          TF_VAR_db_pg_port: ${{ secrets.DB_PG_PORT }}
+          TF_VAR_jwt_access_token_expiration_time: ${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION_TIME }}
+          TF_VAR_jwt_refresh_token_expiration_time: ${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION_TIME }}
+        run: |
+          echo "� Validando variáveis do Terraform..."
+          echo ""
+          echo "📋 Variáveis carregadas:"
+          echo "  🏗️  EKS Cluster: ${TF_VAR_eks_cluster_name:-❌ NÃO DEFINIDA}"
+          echo "  📦 ECR Repository: ${TF_VAR_ecr_repository_url:-❌ NÃO DEFINIDA}"
+          echo "  �️  DB Name: ${TF_VAR_db_pg_name:-❌ NÃO DEFINIDA}"
+          echo "  🔌 DB Port: ${TF_VAR_db_pg_port:-❌ NÃO DEFINIDA}"
+          echo "  ⏰ JWT Access TTL: ${TF_VAR_jwt_access_token_expiration_time:-❌ NÃO DEFINIDA}"
+          echo "  � JWT Refresh TTL: ${TF_VAR_jwt_refresh_token_expiration_time:-❌ NÃO DEFINIDA}"
+          echo ""
+          echo "� Variáveis sensíveis (mascaradas):"
+          echo "  � JWT Secret: ${TF_VAR_jwt_secret:0:8}***[MASKED]"
+          echo "  🗝️  API Key: ${TF_VAR_api_key:0:8}***[MASKED]"
           echo ""
           
           # Validar variáveis obrigatórias
-          echo "🔍 Validando variáveis obrigatórias..."
-          if [[ -z "$ECR_REPOSITORY_URL" ]]; then
-            echo "❌ Erro: ECR_REPOSITORY_URL não definida"
+          echo "✅ Validando variáveis obrigatórias..."
+          MISSING_VARS=""
+          
+          [[ -z "$TF_VAR_eks_cluster_name" ]] && MISSING_VARS="$MISSING_VARS EKS_CLUSTER_NAME"
+          [[ -z "$TF_VAR_ecr_repository_url" ]] && MISSING_VARS="$MISSING_VARS ECR_REPOSITORY_URL"
+          [[ -z "$TF_VAR_jwt_secret" ]] && MISSING_VARS="$MISSING_VARS JWT_SECRET"
+          [[ -z "$TF_VAR_api_key" ]] && MISSING_VARS="$MISSING_VARS API_KEY"
+          [[ -z "$TF_VAR_db_pg_name" ]] && MISSING_VARS="$MISSING_VARS DB_PG_NAME"
+          [[ -z "$TF_VAR_db_pg_port" ]] && MISSING_VARS="$MISSING_VARS DB_PG_PORT"
+          [[ -z "$TF_VAR_jwt_access_token_expiration_time" ]] && MISSING_VARS="$MISSING_VARS JWT_ACCESS_TOKEN_EXPIRATION_TIME"
+          [[ -z "$TF_VAR_jwt_refresh_token_expiration_time" ]] && MISSING_VARS="$MISSING_VARS JWT_REFRESH_TOKEN_EXPIRATION_TIME"
+          
+          if [[ -n "$MISSING_VARS" ]]; then
+            echo "❌ Variáveis faltando:$MISSING_VARS"
+            echo "💡 Adicione essas variáveis nos GitHub Secrets"
             exit 1
           fi
-          if [[ -z "$DB_PG_HOST" ]]; then
-            echo "❌ Erro: DB_PG_HOST não definida"
-            exit 1
-          fi
-          if [[ -z "$DB_PG_USER" ]]; then
-            echo "❌ Erro: DB_PG_USER não definida"
-            exit 1
-          fi
-          if [[ -z "$DB_PG_PASSWORD" ]]; then
-            echo "❌ Erro: DB_PG_PASSWORD não definida"
-            exit 1
-          fi
-          echo "✅ Todas as variáveis obrigatórias validadas"
           
-          # Configurar imagem dinamicamente
-          echo "🔄 Configurando imagem do ECR..."
-          kustomize edit set image tech-challenge=$ECR_REPOSITORY_URL:latest
-          echo "✅ Imagem configurada: $ECR_REPOSITORY_URL:latest"
-          
-          # Criar secrets dinamicamente
-          echo "🔐 Criando secrets..."
-          kubectl create secret generic tech-challenge-secrets \
-            --from-literal=DB_PG_HOST="$DB_PG_HOST" \
-            --from-literal=DB_PG_USER="$DB_PG_USER" \
-            --from-literal=DB_PG_PASSWORD="$DB_PG_PASSWORD" \
-            --from-literal=DB_PG_NAME="$DB_PG_NAME" \
-            --from-literal=DB_PG_PORT="$DB_PG_PORT" \
-            --from-literal=API_KEY="$API_KEY" \
-            --from-literal=JWT_SECRET="$JWT_SECRET" \
-            --from-literal=JWT_ACCESS_TOKEN_EXPIRATION_TIME="$JWT_ACCESS_TOKEN_EXPIRATION_TIME" \
-            --from-literal=JWT_REFRESH_TOKEN_EXPIRATION_TIME="$JWT_REFRESH_TOKEN_EXPIRATION_TIME" \
-            --namespace=tech-challenge \
-            --dry-run=client -o yaml | kubectl apply -f -
-          echo "✅ Secrets criados"
-          
-          # Deploy usando kustomize
-          echo "📦 Aplicando manifests..."
-          kustomize build . | kubectl apply -f -
-          echo "✅ Manifests aplicados"
-          
-          # Aguardar rollout
-          echo "⏳ Aguardando deployment..."
-          kubectl rollout status deployment/tech-challenge-app -n tech-challenge --timeout=300s
-          
-          echo "🎉 Deploy concluído com sucesso!"
-          echo "📊 Status dos pods:"
-          kubectl get pods -n tech-challenge -l app=tech-challenge
-          
-          echo ""
+          echo "✅ Todas as variáveis obrigatórias estão definidas!"
+
+      - name: Terraform Plan
+        env:
+          TF_VAR_eks_cluster_name: ${{ secrets.EKS_CLUSTER_NAME }}
+          TF_VAR_ecr_repository_url: ${{ secrets.ECR_REPOSITORY_URL }}
+          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+          TF_VAR_api_key: ${{ secrets.API_KEY }}
+          TF_VAR_db_pg_name: ${{ secrets.DB_PG_NAME }}
+          TF_VAR_db_pg_port: ${{ secrets.DB_PG_PORT }}
+          TF_VAR_jwt_access_token_expiration_time: ${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION_TIME }}
+          TF_VAR_jwt_refresh_token_expiration_time: ${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION_TIME }}
+        run: |
+          cd terraform
+          echo "📋 Planejando mudanças no Terraform..."
+          terraform plan -no-color
+          echo "✅ Plano criado"
+
+      - name: Terraform Apply
+        env:
+          TF_VAR_eks_cluster_name: ${{ secrets.EKS_CLUSTER_NAME }}
+          TF_VAR_ecr_repository_url: ${{ secrets.ECR_REPOSITORY_URL }}
+          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+          TF_VAR_api_key: ${{ secrets.API_KEY }}
+          TF_VAR_db_pg_name: ${{ secrets.DB_PG_NAME }}
+          TF_VAR_db_pg_port: ${{ secrets.DB_PG_PORT }}
+          TF_VAR_jwt_access_token_expiration_time: ${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION_TIME }}
+          TF_VAR_jwt_refresh_token_expiration_time: ${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION_TIME }}
+        run: |
+          cd terraform
+          echo "🚀 Aplicando mudanças com Terraform..."
+          terraform apply -auto-approve -no-color
+          echo "✅ Deploy realizado com sucesso!"
+
+      - name: Get Application URL
+        run: |
           echo "🌐 Aguardando URL da aplicação..."
-          echo "⏳ Esperando LoadBalancer obter IP externo (pode levar alguns minutos)..."
+          echo "⏳ LoadBalancer pode levar alguns minutos para ficar pronto..."
           
-          # Aguardar LoadBalancer obter IP externo
           for i in {1..30}; do
             EXTERNAL_IP=$(kubectl get svc tech-challenge-loadbalancer -n tech-challenge -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
             if [[ -n "$EXTERNAL_IP" ]]; then
@@ -233,7 +205,9 @@ jobs:
           done
           
           if [[ -z "$EXTERNAL_IP" ]]; then
-            echo "⚠️  LoadBalancer ainda não possui IP externo"
-            echo "📝 Execute este comando para verificar:"
-            echo "   kubectl get svc tech-challenge-loadbalancer -n tech-challenge"
+            echo "⚠️  LoadBalancer ainda configurando..."
+            echo "📝 Execute: kubectl get svc tech-challenge-loadbalancer -n tech-challenge"
           fi
+          
+          echo "📊 Status final dos recursos:"
+          kubectl get all -n tech-challenge
