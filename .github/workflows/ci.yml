@@ -33,17 +33,6 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Run test coverage
-        run: npm run test:cov
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-
       - name: Build application
         run: npm run build
 
@@ -52,20 +41,11 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            let coverage = '';
-            try {
-              const coverageData = fs.readFileSync('./coverage/lcov-report/index.html', 'utf8');
-              coverage = '✅ Coverage report generated successfully';
-            } catch (e) {
-              coverage = '⚠️ Coverage report not found';
-            }
-
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## 🧪 Test Results\n\n✅ Tests completed\n✅ Linting passed\n${coverage}\n✅ Build successful`
+              body: `## 🧪 Test Results\n\n✅ Tests completed\n✅ Linting passed\n✅ Build successful`
             });
 
   build-and-push-image:
