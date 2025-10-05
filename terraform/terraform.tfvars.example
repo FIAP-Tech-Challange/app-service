@@ -1,0 +1,23 @@
+# Exemplo de arquivo terraform.tfvars
+# Copie este arquivo para terraform.tfvars e preencha os valores
+
+# AWS Configuration
+aws_region = "us-east-1"
+
+# EKS Configuration  
+eks_cluster_name = "meu-cluster-eks"
+
+# ECR Configuration
+ecr_repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/tech-challenge"
+
+# Database Configuration
+db_pg_name = "postgres"
+db_pg_port = "5432"
+
+# JWT Configuration
+jwt_secret = "seu-jwt-secret-super-secreto"
+jwt_access_token_expiration_time = "1h"
+jwt_refresh_token_expiration_time = "86400"
+
+# API Configuration
+api_key = "sua-api-key-secreta"
