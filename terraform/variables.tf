@@ -38,6 +38,22 @@ variable "db_pg_port" {
   type        = string
 }
 
+variable "db_pg_user" {
+  description = "Usuário do banco de dados"
+  type        = string
+}
+
+variable "db_pg_password" {
+  description = "Senha do banco de dados"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_pg_host" {
+  description = "Host do banco de dados"
+  type        = string
+}
+
 variable "jwt_access_token_expiration_time" {
   description = "Tempo de expiração do access token JWT"
   type        = string

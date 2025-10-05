@@ -29,12 +29,12 @@ jobs:
         id: ssm-params
         run: |
           PARAMS=$(aws ssm get-parameters --names "/main/rds_endpoint" "main/db_username" "main/db_password" --with-decryption --query "Parameters[].{Name:Name,Value:Value}" --output json)
-          
+
           echo "DB_PG_HOST=$(echo $PARAMS | jq -r '.[] | select(.Name=="/main/rds_endpoint") | .Value')" >> $GITHUB_ENV
           echo "DB_PG_USER=$(echo $PARAMS | jq -r '.[] | select(.Name=="main/db_username") | .Value')" >> $GITHUB_ENV
           DB_PASS=$(echo $PARAMS | jq -r '.[] | select(.Name=="main/db_password") | .Value')
           echo "DB_PG_PASSWORD=$DB_PASS" >> $GITHUB_ENV
-          
+
           echo "::add-mask::$DB_PASS"
 
       - name: Login to Amazon ECR
@@ -46,19 +46,19 @@ jobs:
         run: |
           COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
           ECR_URL=${{ secrets.ECR_REPOSITORY_URL }} # Usa a URL do repositório a partir dos segredos
-          
+
           TAGS="${ECR_URL}:${COMMIT_HASH}"
-          
+
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             TAGS="$TAGS,${ECR_URL}:latest,${ECR_URL}:main"
           fi
-          
+
           echo "image_tags=$(echo $TAGS | sed 's/,/ --tag /g')" >> $GITHUB_OUTPUT
-        
+
       - name: Build and Push Docker Image
         run: |
           echo "Building with tags: --tag ${{ steps.tags.outputs.image_tags }}"
-          
+
           docker build \
             --build-arg DB_PG_HOST=${{ env.DB_PG_HOST }} \
             --build-arg DB_PG_USER=${{ env.DB_PG_USER }} \
@@ -133,11 +133,11 @@ jobs:
           echo "  � JWT Secret: ${TF_VAR_jwt_secret:0:8}***[MASKED]"
           echo "  🗝️  API Key: ${TF_VAR_api_key:0:8}***[MASKED]"
           echo ""
-          
+
           # Validar variáveis obrigatórias
           echo "✅ Validando variáveis obrigatórias..."
           MISSING_VARS=""
-          
+
           [[ -z "$TF_VAR_eks_cluster_name" ]] && MISSING_VARS="$MISSING_VARS EKS_CLUSTER_NAME"
           [[ -z "$TF_VAR_ecr_repository_url" ]] && MISSING_VARS="$MISSING_VARS ECR_REPOSITORY_URL"
           [[ -z "$TF_VAR_jwt_secret" ]] && MISSING_VARS="$MISSING_VARS JWT_SECRET"
@@ -146,13 +146,13 @@ jobs:
           [[ -z "$TF_VAR_db_pg_port" ]] && MISSING_VARS="$MISSING_VARS DB_PG_PORT"
           [[ -z "$TF_VAR_jwt_access_token_expiration_time" ]] && MISSING_VARS="$MISSING_VARS JWT_ACCESS_TOKEN_EXPIRATION_TIME"
           [[ -z "$TF_VAR_jwt_refresh_token_expiration_time" ]] && MISSING_VARS="$MISSING_VARS JWT_REFRESH_TOKEN_EXPIRATION_TIME"
-          
+
           if [[ -n "$MISSING_VARS" ]]; then
             echo "❌ Variáveis faltando:$MISSING_VARS"
             echo "💡 Adicione essas variáveis nos GitHub Secrets"
             exit 1
           fi
-          
+
           echo "✅ Todas as variáveis obrigatórias estão definidas!"
 
       - name: Terraform Plan
@@ -163,6 +163,9 @@ jobs:
           TF_VAR_api_key: ${{ secrets.API_KEY }}
           TF_VAR_db_pg_name: ${{ secrets.DB_PG_NAME }}
           TF_VAR_db_pg_port: ${{ secrets.DB_PG_PORT }}
+          TF_VAR_db_pg_host: ${{ env.DB_PG_HOST }}
+          TF_VAR_db_pg_user: ${{ env.DB_PG_USER }}
+          TF_VAR_db_pg_password: ${{ env.DB_PG_PASSWORD }}
           TF_VAR_jwt_access_token_expiration_time: ${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION_TIME }}
           TF_VAR_jwt_refresh_token_expiration_time: ${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION_TIME }}
         run: |
@@ -179,6 +182,9 @@ jobs:
           TF_VAR_api_key: ${{ secrets.API_KEY }}
           TF_VAR_db_pg_name: ${{ secrets.DB_PG_NAME }}
           TF_VAR_db_pg_port: ${{ secrets.DB_PG_PORT }}
+          TF_VAR_db_pg_user: ${{ env.DB_PG_USER }}
+          TF_VAR_db_pg_password: ${{ env.DB_PG_PASSWORD }}
+          TF_VAR_db_pg_host: ${{ env.DB_PG_HOST }}
           TF_VAR_jwt_access_token_expiration_time: ${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION_TIME }}
           TF_VAR_jwt_refresh_token_expiration_time: ${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION_TIME }}
         run: |
@@ -191,7 +197,7 @@ jobs:
         run: |
           echo "🌐 Aguardando URL da aplicação..."
           echo "⏳ LoadBalancer pode levar alguns minutos para ficar pronto..."
-          
+
           for i in {1..30}; do
             EXTERNAL_IP=$(kubectl get svc tech-challenge-loadbalancer -n tech-challenge -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
             if [[ -n "$EXTERNAL_IP" ]]; then
@@ -203,11 +209,11 @@ jobs:
             echo "⏳ Aguardando... (tentativa $i/30)"
             sleep 10
           done
-          
+
           if [[ -z "$EXTERNAL_IP" ]]; then
             echo "⚠️  LoadBalancer ainda configurando..."
             echo "📝 Execute: kubectl get svc tech-challenge-loadbalancer -n tech-challenge"
           fi
-          
+
           echo "📊 Status final dos recursos:"
           kubectl get all -n tech-challenge

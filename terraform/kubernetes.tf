@@ -42,11 +42,11 @@ resource "kubernetes_secret" "tech_challenge_secrets" {
   }
 
   data = {
-    DB_PG_HOST    = data.aws_ssm_parameter.rds_host.value
-    DB_PG_USER    = data.aws_ssm_parameter.rds_user.value
-    DB_PG_PASSWORD = data.aws_ssm_parameter.rds_password.value
-    API_KEY       = var.api_key
-    JWT_SECRET    = var.jwt_secret
+    DB_PG_HOST     = var.db_pg_host
+    DB_PG_USER     = var.db_pg_user
+    DB_PG_PASSWORD = var.db_pg_password
+    API_KEY        = var.api_key
+    JWT_SECRET     = var.jwt_secret
   }
 
   type = "Opaque"

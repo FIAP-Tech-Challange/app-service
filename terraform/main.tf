@@ -34,17 +34,3 @@ data "aws_eks_cluster" "cluster" {
 data "aws_eks_cluster_auth" "cluster" {
   name = var.eks_cluster_name
 }
-
-# Data source para RDS (SSM Parameters)
-# Usando os mesmos paths do CI para consistência
-data "aws_ssm_parameter" "rds_host" {
-  name = "/main/rds_endpoint"
-}
-
-data "aws_ssm_parameter" "rds_user" {
-  name = "main/db_username"
-}
-
-data "aws_ssm_parameter" "rds_password" {
-  name = "main/db_password"
-}
