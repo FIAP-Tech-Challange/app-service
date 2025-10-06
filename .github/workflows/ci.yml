@@ -40,7 +40,7 @@ jobs:
     name: 📦 Build and Push to ECR
     runs-on: ubuntu-latest
     outputs:
-      terraform_bucket: ${{ steps.build-and-push-image.outputs.bucket_name }}
+      terraform_bucket: ${{ steps.set-outputs.outputs.terraform_bucket }}
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
@@ -151,6 +151,10 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
+      - name: Log the variables from terraform
+        run: |
+          echo ${{ needs.bootstrap.outputs.terraform_bucket }}
+
       - name: 🔍 Verify AWS Identity
         run: |
           echo "🔍 Verifying AWS Identity..."
@@ -194,7 +198,8 @@ jobs:
         run: |
           cd terraform
           echo "🔧 Inicializando Terraform..."
-          terraform init -backend-config="bucket=${{ needs.build-and-push-image.outputs.bucket_name }}"
+          terraform init \
+            -backend-config="bucket=${{ needs.build-and-push-image.outputs.terraform_bucket }}"
           echo "✅ Terraform inicializado"
 
       - name: 📊 Log Terraform Variables
