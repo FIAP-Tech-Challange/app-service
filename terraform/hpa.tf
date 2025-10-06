@@ -49,6 +49,7 @@ resource "kubernetes_horizontal_pod_autoscaler_v2" "tech_challenge_hpa" {
           value         = 50
           period_seconds = 60
         }
+        select_policy = "Min"
       }
 
       scale_up {
