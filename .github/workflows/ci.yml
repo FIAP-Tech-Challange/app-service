@@ -89,32 +89,17 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
-      - name: Verify AWS Identity
-        run: |
-          echo "🔍 Verifying AWS Identity..."
-          aws sts get-caller-identity
-          echo "✅ AWS credentials are valid"
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
 
       - name: Setup kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
-          echo "📝 Updating kubeconfig for EKS cluster..."
           aws eks update-kubeconfig --region us-east-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
-          echo "✅ Kubeconfig updated"
-
-      - name: Verify EKS Access
-        run: |
-          echo "🔍 Testing EKS cluster access..."
-          kubectl cluster-info
-          kubectl get nodes
-          echo "✅ EKS cluster is accessible"
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.0
 
       - name: Terraform Init
         run: |
