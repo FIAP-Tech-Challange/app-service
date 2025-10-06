@@ -1,68 +1,308 @@
-# Tech Challenge - Sistema de Autoatendimento
+# 🍔 App Service - API de Autoatendimento
 
-[![NestJS CI Build, Test, and Healthcheck](https://github.com/davidasteixeira/tech-challenge/actions/workflows/ci.yml/badge.svg)](https://github.com/davidasteixeira/tech-challenge/actions/workflows/ci.yml)
+[![Build and Push to ECR](https://github.com/FIAP-Tech-Challange/app-service/actions/workflows/ci.yml/badge.svg)](https://github.com/FIAP-Tech-Challange/app-service/actions/workflows/ci.yml)
 
-## 📋 Visão Geral
+## � DESCRIÇÃO DO REPOSITÓRIO
 
-Sistema de autoatendimento para lanchonetes desenvolvido com **Clean Architecture** e **NestJS**. A solução permite o gerenciamento completo do fluxo de pedidos através de totens de autoatendimento, desde a seleção de produtos até o pagamento e acompanhamento do status do pedido.
+### Sobre o Serviço
 
-### 🚀 Principais Funcionalidades
+O **App Service** é a API principal do sistema de autoatendimento para lanchonetes, desenvolvida com **NestJS** e **Clean Architecture**. Este serviço recebe tráfego de duas fontes:
 
-- **🏪 Gestão de Lojas**: Cadastro e autenticação de estabelecimentos
-- **🖥️ Totens de Autoatendimento**: Gerenciamento de pontos de venda
-- **👥 Clientes**: Cadastro opcional com CPF para identificação
-- **📦 Produtos e Categorias**: Catálogo organizado por categorias
-- **🛒 Pedidos**: Fluxo completo do pedido com rastreamento de status
-- **💳 Pagamentos**: Simulador fake de pagamentos
-- **📊 Dashboard**: Acompanhamento de pedidos em tempo real
-- **☁️ Deploy Kubernetes**: Infraestrutura escalável e resiliente
+- **🚪 API Gateway + Lambda**: Para validação de usuários e autenticação
+- **🖥️ Totens**: Acesso direto para operações de autoatendimento
 
-## 🏗️ Arquitetura do Sistema
+> **⚠️ IMPORTANTE**: O Gateway é usado apenas para validação de usuários. Os totens acessam diretamente a API.
 
-### Desenho da Arquitetura
+### Integração com Outros Repositórios
 
-A solução foi projetada seguindo os princípios de **Clean Architecture** para atender aos seguintes requisitos:
+Este repositório faz parte de um ecossistema maior e possui as seguintes dependências:
 
-#### 📋 Requisitos de Negócio
+```mermaid
+graph LR
+    A[Frontend Web/Mobile] --> B[API Gateway + Lambda]
+    B --> C[App Service]
 
-- **Autoatendimento**: Sistema para pedidos sem necessidade de atendente
-- **Gestão de Filas**: Controle inteligente de pedidos por status e prioridade
-- **Pagamentos Seguros**: Integração e fallback simulado
-- **Escalabilidade**: Suporte a múltiplas lojas e totens
-- **Rastreabilidade**: Acompanhamento completo do ciclo do pedido
+    T[Totens de Autoatendimento] --> C
 
-#### ⚙️ Requisitos de Infraestrutura
+    C --> D[Database RDS]
+    C --> E[Parameter Store]
+    C --> F[ECR Repository]
+
+    G[Infrastructure] --> D
+    G --> E
+    G --> F
+    H[Notification Service] --> C
+
+    style C fill:#e1f5fe
+    style B fill:#fff3e0
+    style A fill:#f3e5f5
+    style T fill:#e8f5e8
+```
+
+**Repositórios Relacionados:**
+
+- 🌐 **Frontend**: Interface web/mobile para usuários
+- 🚪 **API Gateway + Lambda**: Validação de usuários apenas
+- 🖥️ **Totens**: Interface de autoatendimento (acesso direto)
+- 🏗️ **Infrastructure**: Terraform para provisionamento AWS
+- 📧 **Notification Service**: Serviço de notificações
+- 📊 **Monitoring**: Observabilidade e métricas
+
+### Fluxo de Comunicação
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario Web/Mobile
+    participant T as Totem
+    participant G as API Gateway + Lambda
+    participant A as App Service
+    participant D as RDS Database
+    participant P as Parameter Store
+
+    Note over U,G: Fluxo de Usuários (via Gateway)
+    U->>G: Request com autenticação
+    G->>G: Validação Lambda
+    G->>A: Request autorizado
+
+    Note over T,A: Fluxo de Totens (acesso direto)
+    T->>A: Request direto com token
+
+    Note over A,P: Operações Comuns
+    A->>P: Buscar configurações
+    A->>D: Operação no banco
+    D-->>A: Resultado
+    A-->>G: Response (usuários)
+    A-->>T: Response (totens)
+    G-->>U: Response final
+```
+
+## 🏗️ ARQUITETURA DETALHADA
+
+### Stack Tecnológica Completa
+
+#### Core Framework
+
+- **🎯 NestJS**: Framework Node.js para APIs escaláveis
+- **📘 TypeScript**: Tipagem estática e desenvolvimento robusto
+- **🧪 Jest**: Framework de testes unitários e integração
+- **📖 Swagger/OpenAPI**: Documentação automatizada da API
+
+#### Persistência e Dados
+
+- **� PostgreSQL**: Banco de dados relacional principal
+- **📊 TypeORM**: ORM para TypeScript com migrations
+- **💾 AWS RDS**: PostgreSQL gerenciado na AWS
+- **� AWS Parameter Store**: Gerenciamento seguro de configurações
+
+#### Infraestrutura e Deploy
+
+- **� Docker**: Containerização da aplicação
+- **☸️ Kubernetes (EKS)**: Orquestração e escalabilidade
+- **📦 Amazon ECR**: Registry privado de imagens Docker
+- **🔄 GitHub Actions**: CI/CD automatizado
+- **🏗️ Terraform**: Infrastructure as Code
+
+### Padrões Arquiteturais
+
+#### Clean Architecture Implementation
+
+A aplicação segue rigorosamente os princípios da **Clean Architecture**, garantindo:
+
+- **🔄 Inversão de Dependência**: Core não depende de detalhes externos
+- **🧪 Testabilidade**: Regras de negócio isoladas e testáveis
+- **🔌 Independência de Framework**: Lógica desacoplada do NestJS
+- **📱 Independência de UI**: API agnóstica à interface
+- **🗄️ Independência de Banco**: Abstrações para persistência
+
+```mermaid
+graph TB
+    subgraph "🎯 CORE LAYER"
+        E[Entities<br/>Regras de Negócio]
+        U[Use Cases<br/>Casos de Uso]
+        G[Gateways<br/>Interfaces]
+    end
+
+    subgraph "🌐 EXTERNAL LAYER"
+        C[Controllers<br/>NestJS]
+        D[DataSources<br/>TypeORM]
+        P[Presenters<br/>DTOs]
+    end
+
+    subgraph "🔧 INFRASTRUCTURE"
+        DB[(PostgreSQL)]
+        API[NestJS Framework]
+        K8S[Kubernetes]
+    end
+
+    C --> U
+    U --> E
+    U --> G
+    D --> G
+    P --> C
+    D --> DB
+    C --> API
+    API --> K8S
+
+    style E fill:#4caf50
+    style U fill:#2196f3
+    style G fill:#ff9800
+```
+
+### Estrutura de Pastas Detalhada
+
+```
+📁 app-service/
+├── 📄 .github/workflows/           # 🔄 CI/CD Pipelines
+│   └── ci.yml                     # Build, test e deploy automatizado
+├── 📁 src/                        # 🎯 Código fonte principal
+│   ├── 📄 CLEAN_ARCHITECTURE_GUIDE.md  # 📖 Guia da arquitetura
+│   ├── 📁 common/                 # 🔗 Elementos compartilhados
+│   │   ├── 📁 dataSource/         # 🔌 Interfaces de dados
+│   │   ├── 📁 DTOs/               # 📦 Data Transfer Objects
+│   │   └── 📁 exceptions/         # ⚠️ Exceções customizadas
+│   ├── 📁 core/                   # 🎯 CAMADA DE NEGÓCIO
+│   │   ├── 📁 common/             # 🛠️ Utilitários e Value Objects
+│   │   │   ├── 📁 utils/          # 🔧 Helpers (UUID, encoder)
+│   │   │   └── 📁 valueObjects/   # 💎 CPF, Email, CNPJ, Phone
+│   │   └── 📁 modules/            # 📦 Módulos de domínio
+│   │       ├── 📁 customer/       # 👥 Gestão de clientes
+│   │       ├── 📁 order/          # 🛒 Gestão de pedidos
+│   │       ├── 📁 payment/        # 💳 Processamento de pagamentos
+│   │       ├── 📁 product/        # 📦 Catálogo de produtos
+│   │       └── 📁 store/          # 🏪 Gestão de lojas
+│   └── 📁 external/               # 🌐 CAMADA EXTERNA
+│       ├── 📁 consumers/          # 🚪 Controllers NestJS
+│       └── 📁 dataSources/        # 💾 Implementações TypeORM
+├── 📁 terraform/                  # 🏗️ Infrastructure as Code
+│   ├── 📄 main.tf                 # Configuração principal
+│   ├── 📄 kubernetes.tf           # Recursos K8s
+│   └── 📄 variables.tf            # Variáveis do Terraform
+├── 📁 test/                       # 🧪 Testes automatizados
+│   ├── 📄 jest.setup.ts           # Configuração Jest
+│   └── 📁 core/                   # Testes unitários
+└── 📄 docker-compose.yml          # 🐳 Ambiente de desenvolvimento
+```
+
+### Princípios Implementados
+
+#### SOLID Principles
+
+- **🔲 Single Responsibility**: Cada classe tem uma única responsabilidade
+- **🔓 Open/Closed**: Extensível sem modificação
+- **🔄 Liskov Substitution**: Substituibilidade de implementações
+- **� Interface Segregation**: Interfaces específicas e coesas
+- **⬇️ Dependency Inversion**: Dependa de abstrações, não implementações
+
+#### Domain-Driven Design (DDD)
+
+- **🏢 Bounded Contexts**: Módulos bem definidos (customer, order, payment)
+- **📦 Entities**: Objetos com identidade única
+- **💎 Value Objects**: Objetos imutáveis (CPF, Email)
+- **🚪 Gateways**: Contratos para acesso externo
+- **📋 Use Cases**: Regras de negócio encapsuladas
+
+## � SEGURANÇA E PROTEÇÃO DA BRANCH
+
+### Branch Protection Rules
+
+Este repositório implementa **proteção rigorosa** na branch `main` para garantir qualidade e segurança:
+
+> **⚠️ IMPORTANTE**: Pushes diretos para `main` são **BLOQUEADOS**. Apenas via Pull Request.
+
+#### Regras Implementadas
+
+- 🚫 **Direct Push Blocked**: Nenhum push direto permitido na `main`
+- ✅ **PR Obrigatório**: Todas as mudanças via Pull Request
+- 👥 **Code Review**: Mínimo de 1 aprovação obrigatória
+- 🧪 **Status Checks**: CI deve passar antes do merge
+- 🔄 **Update Branch**: Branch deve estar atualizada antes do merge
+- 🗑️ **Delete Head**: Branch de feature é removida após merge
+
+### Workflow de Contribuição
 
 ```mermaid
 graph TD
-    A[Load Balancer] --> B[NestJS App - Pods 2-8]
-    B --> C[PostgreSQL]
-    B --> D[Fake Pagamento API]
-    E[Horizontal Pod Autoscaler] --> B
-    F[Metrics Server] --> E
-    G[Kubernetes Cluster] --> A
-    H[Persistent Volume] --> C
+    A[🌱 Criar Feature Branch] --> B[💻 Desenvolver]
+    B --> C[🧪 Testes Locais]
+    C --> D[📤 Push para Branch]
+    D --> E[🔀 Criar Pull Request]
+    E --> F{✅ CI Passou?}
+    F -->|Não| G[🔧 Corrigir Issues]
+    G --> D
+    F -->|Sim| H{👥 Review Aprovado?}
+    H -->|Não| I[🔄 Ajustar Código]
+    I --> D
+    H -->|Sim| J[🎯 Merge para Main]
+    J --> K[🚀 Deploy Automático]
+    K --> L[🗑️ Deletar Feature Branch]
+
+    style A fill:#4caf50
+    style J fill:#2196f3
+    style K fill:#ff9800
 ```
 
-**Componentes da Infraestrutura:**
+### Processo de Deploy Seguro
 
-- **Kubernetes**: Orquestração de containers (MicroK8s/AKS/EKS/GKE)
-- **Auto Scaling**: HPA configurado para 2-8 pods baseado em CPU/Memória
-- **Load Balancer**: Distribuição de carga entre pods
-- **Persistent Storage**: Volume persistente para PostgreSQL
-- **Health Checks**: Monitoramento contínuo da aplicação
-- **CI/CD**: Pipeline automatizado com GitHub Actions
+#### Step-by-Step Contributing
 
-### 🔧 Stack Tecnológica
+1. **🌱 Criação de Branch**
 
-- **Backend**: NestJS + TypeScript + Clean Architecture
-- **Banco de Dados**: PostgreSQL com TypeORM
-- **Container**: Docker + Kubernetes
-- **Pagamentos**: Simulador Fake
-- **Testes**: Jest + Supertest
-- **Documentação**: Swagger/OpenAPI
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feat/sua-feature
+   ```
 
-## 📚 Documentação da API
+2. **💻 Desenvolvimento Local**
+
+   ```bash
+   # Instalar dependências
+   npm install
+
+   # Ambiente de desenvolvimento
+   cp env-example .env
+   docker-compose up -d
+
+   # Desenvolvimento com hot-reload
+   npm run start:dev
+   ```
+
+3. **🧪 Validação Local**
+
+   ```bash
+   # Testes unitários
+   npm test
+
+   # Testes com coverage
+   npm run test:cov
+
+   # Lint e formatação
+   npm run lint
+   npm run format
+   ```
+
+4. **📤 Push e PR**
+
+   ```bash
+   git add .
+   git commit -m "feat: sua nova feature"
+   git push origin feat/sua-feature
+   # Criar PR via GitHub UI
+   ```
+
+5. **✅ Aprovação e Merge**
+
+   - CI automaticamente executado
+   - Review obrigatório por 1+ pessoas
+   - Merge apenas após todas as verificações
+
+6. **🚀 Deploy Automático**
+   - Merge em `main` triggera deploy
+   - Build e push para ECR
+   - Deploy automático no EKS
+   - Testes de saúde pós-deploy
+
+## �📚 Documentação da API
 
 ### 🔗 Swagger Documentation
 
@@ -419,99 +659,469 @@ test/
 │       └── store/             # Testes do módulo Store
 ```
 
-## 🔄 CI/CD
+## 🔄 CI/CD PIPELINE
 
-### 🚀 Pipeline Automatizado
+### Workflows Automatizados
 
-O projeto inclui pipeline de CI/CD configurado no **GitHub Actions**:
+O repositório possui um pipeline robusto de CI/CD implementado no **GitHub Actions**:
 
 **📄 Arquivo**: `.github/workflows/ci.yml`
 
-#### **Características do Pipeline:**
+### Pipeline de CI/CD
 
-- ✅ **Trigger**: Push e Pull Requests para `main`, `qa`, `develop`
-- ✅ **Node.js Setup**: Configuração automática com cache de dependências
-- ✅ **Testes Automatizados**: Execução completa da suíte de testes
-- ✅ **Build Validation**: Verificação de build sem erros
-- ✅ **Health Check**: Validação de endpoints críticos
+```mermaid
+graph TD
+    A[📝 Pull Request] --> B[🧪 Run Tests]
+    B --> C{✅ Tests Pass?}
+    C -->|No| D[❌ Block PR]
+    C -->|Yes| E[✅ Allow Merge]
 
-#### **Matrix Strategy:**
+    F[📤 Push to main] --> G[🔧 Build & Test]
+    G --> H[📦 Build Docker Image]
+    H --> I[🚀 Push to ECR]
+    I --> J[☸️ Deploy to EKS]
+    J --> K[🏥 Health Check]
+    K --> L[✅ Deploy Complete]
 
-```yaml
-strategy:
-  matrix:
-    node-version: [18.x, 20.x]
-    os: [ubuntu-latest]
+    style A fill:#e1f5fe
+    style E fill:#4caf50
+    style D fill:#f44336
+    style F fill:#fff3e0
+    style L fill:#2196f3
 ```
 
-## 🎥 Demonstração em Vídeo
+### Job 1: Test (Pull Requests)
 
-### 📹 Vídeo Demonstrativo
+#### Triggers e Validações
 
-**🔗 Link do Vídeo**: [https://www.youtube.com/watch?v=AiEWQPJ_DV4]
+- 🧪 **Executado em**: Toda Pull Request para `main`
+- ✅ **Validações**: Lint, Testes, Coverage, Build
+- 📊 **Comentário automático**: Resultado dos testes na PR
 
-**📋 Conteúdo Demonstrado:**
+#### Etapas dos Testes
 
-- ✅ **Arquitetura da Solução**: Visão geral dos componentes
-- ✅ **Deploy Kubernetes**: Processo de deploy e configuração
-- ✅ **Funcionamento dos Endpoints**: Teste prático das APIs
-- ✅ **Infraestrutura Criada**: Demonstração da stack completa
-- ✅ **Fluxo de Pedido Completo**: Do cadastro à entrega
-- ✅ **Monitoramento e Logs**: Observabilidade da aplicação
+```yaml
+- name: Setup Node.js
+  uses: actions/setup-node@v4
+  with:
+    node-version: '18'
+    cache: 'npm'
 
-**🎯 Foco**: Evidência prática do funcionamento end-to-end
+- name: Install dependencies
+  run: npm ci
 
-## 📊 Recursos Adicionais
+- name: Run linting
+  run: npm run lint
 
-### 🎨 Documentação Visual
+- name: Run tests
+  run: npm test
 
-- **📐 [Miro - Arquitetura e Fluxos](https://miro.com/app/board/uXjVIGlxRtY=/)**: Diagramas visuais da arquitetura e user journeys
-- **🗄️ [Modelo do Banco de Dados](https://app.brmodeloweb.com/#!/publicview/68213be2acb39fc7c317bb53)**: Schema completo das entidades
-- **📊 [Diagrama de Escalabilidade](.github/assets/diagram.png)**: Demonstração visual do scale e estrutura da aplicação
+- name: Run test coverage
+  run: npm run test:cov
 
-### 🔧 Configurações Avançadas
+- name: Build application
+  run: npm run build
+```
 
-#### **Variáveis de Ambiente Principais:**
+### Job 2: Build and Push Image (Main Branch)
+
+#### Triggers e Condições
+
+```yaml
+on:
+  pull_request:
+    branches: [main] # 🧪 PRs triggeram testes
+  push:
+    branches: [main] # 🚀 Push na main triggera build/deploy
+```
+
+#### Etapas Detalhadas
+
+**🔧 Setup e Configuração**
+
+```yaml
+- name: Checkout repo
+  uses: actions/checkout@v4
+
+- name: Configure AWS Credentials
+  uses: aws-actions/configure-aws-credentials@v4
+  with:
+    aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+    aws-region: us-east-1
+```
+
+**📊 Fetch Database Parameters**
+
+- Busca credenciais do RDS via **AWS Parameter Store**
+- Máscara automática de senhas nos logs
+- Validação de conectividade AWS
+
+**📦 Container Build Process**
+
+```yaml
+- name: Build and Push Docker Image
+  run: |
+    docker build \
+      --build-arg DB_PG_HOST=${{ env.DB_PG_HOST }} \
+      --build-arg DB_PG_USER=${{ env.DB_PG_USER }} \
+      --build-arg DB_PG_PASSWORD=${{ env.DB_PG_PASSWORD }} \
+      --tag ${{ steps.tags.outputs.image_tags }} \
+      --push .
+```
+
+**🏷️ Image Tagging Strategy**
+
+- `{COMMIT_HASH}`: Tag específico do commit (7 chars)
+- `latest`: Tag sempre atualizada
+- `main`: Tag da branch principal
+
+### Job 3: Deploy to EKS
+
+#### Dependências e Condições
+
+```yaml
+needs: build-and-push-image
+if: github.ref == 'refs/heads/main' # ⚠️ Deploy apenas da main
+```
+
+#### Etapas de Deploy
+
+**☸️ Kubernetes Setup**
 
 ```bash
-# Banco de Dados
+# Setup kubectl
+curl -LO "https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+# Update kubeconfig
+aws eks update-kubeconfig --region us-east-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
+```
+
+**🏗️ Terraform Deployment**
+
+```yaml
+- name: Setup Terraform
+  uses: hashicorp/setup-terraform@v3
+  with:
+    terraform_version: 1.6.0
+
+- name: Terraform Apply
+  env:
+    TF_VAR_eks_cluster_name: ${{ secrets.EKS_CLUSTER_NAME }}
+    TF_VAR_ecr_repository_url: ${{ secrets.ECR_REPOSITORY_URL }}
+    # ... outras variáveis
+  run: |
+    cd terraform
+    terraform init
+    terraform plan -no-color
+    terraform apply -auto-approve -no-color
+```
+
+**🌐 Application URL Discovery**
+
+```bash
+# Aguarda LoadBalancer ficar pronto
+EXTERNAL_IP=$(kubectl get svc tech-challenge-loadbalancer -n tech-challenge -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+echo "🚀 URL da aplicação: http://$EXTERNAL_IP"
+```
+
+### Recursos do Pipeline
+
+#### Segurança Implementada
+
+- ✅ **AWS Credentials**: Rotação automática via GitHub Secrets
+- ✅ **Sensitive Data Masking**: Senhas mascaradas nos logs
+- ✅ **Parameter Store**: Configurações seguras via AWS SSM
+- ✅ **ECR Private**: Registry privado para imagens Docker
+
+#### Validações Obrigatórias
+
+- 🧪 **Variable Validation**: Verificação de todas as variáveis obrigatórias
+- 🔍 **AWS Identity Check**: Validação de credenciais AWS
+- ☸️ **EKS Access**: Teste de conectividade com cluster
+- 🏥 **Health Checks**: Verificação pós-deploy
+
+#### Monitoramento e Logs
+
+- 📊 **Detailed Logging**: Logs estruturados com emojis
+- ⏱️ **Timeout Controls**: Timeouts adequados para cada etapa
+- 🔄 **Retry Logic**: Tentativas automáticas em falhas temporárias
+- 📈 **Resource Status**: Status final de todos os recursos K8s
+
+## 🔐 SECRETS E VARIÁVEIS DE AMBIENTE
+
+### GitHub Secrets Obrigatórias
+
+Para funcionamento do pipeline CI/CD, as seguintes **GitHub Secrets** devem ser configuradas:
+
+> **⚠️ CRÍTICO**: Pipeline falhará se algum secret estiver ausente.
+
+#### AWS Credentials
+
+```bash
+AWS_ACCESS_KEY_ID          # Chave de acesso AWS
+AWS_SECRET_ACCESS_KEY      # Chave secreta AWS
+AWS_SESSION_TOKEN          # Token de sessão AWS (se aplicável)
+```
+
+#### EKS e ECR Configuration
+
+```bash
+EKS_CLUSTER_NAME           # Nome do cluster EKS
+ECR_REPOSITORY_URL         # URL do repositório ECR
+```
+
+#### Database Configuration
+
+```bash
+DB_PG_NAME                 # Nome do banco PostgreSQL
+DB_PG_PORT                 # Porta do banco (geralmente 5432)
+```
+
+#### Application Secrets
+
+```bash
+JWT_SECRET                 # Chave secreta para JWT
+API_KEY                    # Chave da API interna
+JWT_ACCESS_TOKEN_EXPIRATION_TIME   # TTL do access token
+JWT_REFRESH_TOKEN_EXPIRATION_TIME  # TTL do refresh token
+```
+
+### AWS Parameter Store
+
+O pipeline busca automaticamente as seguintes configurações do **Parameter Store**:
+
+```bash
+/main/rds_endpoint         # Endpoint do RDS PostgreSQL
+main/db_username           # Usuário do banco
+main/db_password           # Senha do banco (criptografada)
+```
+
+#### Setup Parameter Store
+
+```bash
+# Criar parâmetros no AWS SSM
+aws ssm put-parameter \
+  --name "/main/rds_endpoint" \
+  --value "your-rds-endpoint.amazonaws.com" \
+  --type "String"
+
+aws ssm put-parameter \
+  --name "main/db_username" \
+  --value "postgres" \
+  --type "String"
+
+aws ssm put-parameter \
+  --name "main/db_password" \
+  --value "your-secure-password" \
+  --type "SecureString"
+```
+
+### Configuração Local (.env)
+
+Para desenvolvimento local, copie e configure:
+
+```bash
+# Copiar template
+cp env-example .env
+```
+
+#### Variáveis de Ambiente Locais
+
+```bash
+# Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 DB_DATABASE=tech_challenge
 
-# JWT
-JWT_SECRET=your-secret-key
+# JWT Configuration
+JWT_SECRET=your-local-jwt-secret-key
+JWT_ACCESS_TOKEN_EXPIRATION_TIME=3600
+JWT_REFRESH_TOKEN_EXPIRATION_TIME=86400
+
+# API Configuration
+API_KEY=your-local-api-key
+NODE_ENV=development
+PORT=3000
+
+# External Services
+FAKE_PAYMENT_API_URL=http://localhost:3001
 ```
 
-#### **Portas e Endpoints:**
+### Práticas de Segurança
 
-- **Aplicação**: `3000`
-- **PostgreSQL**: `5432`
-- **Swagger**: `/docs`
-- **Health Check**: `/health`
+#### ✅ Implementadas
 
-### 🌟 Características Técnicas
+- 🔐 **Secrets Rotation**: Rotação automática via AWS
+- 🎭 **Log Masking**: Dados sensíveis mascarados nos logs
+- 🔒 **Encrypted Parameters**: Uso de SecureString no Parameter Store
+- 🏗️ **Least Privilege**: IAM roles com permissões mínimas
+- 🔄 **Environment Separation**: Ambientes isolados (dev/prod)
 
-#### **Clean Architecture Benefits:**
+#### 🚨 Regras Críticas
 
-- 🔄 **Testabilidade**: Regras de negócio isoladas
-- 🔌 **Flexibilidade**: Fácil troca de frameworks/DBs
-- 📈 **Escalabilidade**: Arquitetura orientada a crescimento
-- 🛡️ **Manutenibilidade**: Código organizando e desacoplado
+> **⚠️ NUNCA**:
+>
+> - Commitar secrets no código
+> - Usar valores hardcoded em produção
+> - Compartilhar secrets via chat/email
+> - Usar secrets de produção em development
 
-#### **Kubernetes Features:**
+#### 📋 Checklist de Segurança
 
-- 🚀 **Auto Scaling**: HPA configurado (2-8 pods)
-- 💾 **Persistent Storage**: Volume para PostgreSQL
-- 🔒 **Secrets Management**: Configurações sensíveis seguras
-- 📊 **Health Monitoring**: Probes para disponibilidade
-- ⚡ **Load Balancing**: Distribuição automática de carga
+- [ ] Todos os secrets configurados no GitHub
+- [ ] Parameter Store configurado na AWS
+- [ ] IAM roles com permissões mínimas
+- [ ] Secrets rotation configurada
+- [ ] Monitoring de acesso aos secrets
+- [ ] Backup seguro dos secrets críticos
 
-#### **Performance & Monitoring:**
+### Troubleshooting Secrets
 
-- 📈 **Métricas**: CPU e memória monitoradas
-- 🔍 **Logs Centralizados**: Rastreamento de eventos
-- 🧪 **Testes de Carga**: K6 integrado
-- 📊 **Dashboard**: Métricas em tempo real
+#### Erro: "Missing Variables"
+
+```bash
+# Verificar secrets no GitHub
+# Settings > Secrets and variables > Actions
+
+# Verificar Parameter Store
+aws ssm get-parameters --names "/main/rds_endpoint"
+```
+
+#### Erro: "Access Denied"
+
+```bash
+# Verificar IAM permissions
+aws sts get-caller-identity
+aws iam get-user
+```
+
+#### Erro: "Parameter Not Found"
+
+```bash
+# Listar parâmetros existentes
+aws ssm describe-parameters
+```
+
+## 🎥 Demonstração em Vídeo
+
+### 📹 Demo e Recursos
+
+**🔗 Vídeo Demonstrativo**: [Sistema em Funcionamento](https://www.youtube.com/watch?v=AiEWQPJ_DV4)
+
+**� Recursos Complementares:**
+
+- 📐 [Arquitetura Visual - Miro](https://miro.com/app/board/uXjVIGlxRtY=/)
+- 🗄️ [Modelo de Dados](https://app.brmodeloweb.com/#!/publicview/68213be2acb39fc7c317bb53)
+- 📖 [Clean Architecture Guide](./src/CLEAN_ARCHITECTURE_GUIDE.md)
+
+## � GUIA RÁPIDO DE EXECUÇÃO
+
+### Desenvolvimento Local
+
+```bash
+# 1. Clonar e configurar
+git clone https://github.com/FIAP-Tech-Challange/app-service.git
+cd app-service
+cp env-example .env
+
+# 2. Iniciar ambiente
+docker-compose up -d
+
+# 3. Desenvolver com hot-reload
+npm install
+npm run start:dev
+
+# 4. Acessar aplicação
+# API: http://localhost:3000
+# Docs: http://localhost:3000/docs
+```
+
+### Deploy em Produção
+
+> **⚠️ IMPORTANTE**: Deploy apenas via push para branch `main`
+
+```bash
+# 1. Criar feature branch
+git checkout -b feat/sua-feature
+
+# 2. Desenvolvimento e testes
+npm test
+npm run lint
+
+# 3. Pull Request
+git push origin feat/sua-feature
+# Criar PR via GitHub
+
+# 4. Deploy automático após merge
+# CI/CD: Build → ECR → EKS → Health Check
+```
+
+## 📞 SUPORTE E CONTRIBUIÇÃO
+
+### 🐛 Reportar Issues
+
+- Criar issue detalhada no GitHub
+- Incluir logs e steps para reprodução
+- Usar labels adequadas
+
+### 💡 Contribuições
+
+- Seguir workflow de branch protection
+- Manter coverage de testes > 80%
+- Aderir aos padrões Clean Architecture
+
+### 📧 Contato
+
+- **Time DevOps**: Para issues de infraestrutura
+- **Team Lead**: Para decisões arquiteturais
+- **Code Review**: Via Pull Requests
+
+---
+
+## 🏦 Banco
+
+### Modelagem de Dados
+
+O sistema utiliza **PostgreSQL** como banco principal, hospedado no **AWS RDS** com as seguintes características:
+
+#### Estrutura Principal
+
+- **🏪 Stores**: Lojas cadastradas no sistema
+- **🖥️ Totems**: Pontos de autoatendimento por loja
+- **👥 Customers**: Clientes identificados por CPF
+- **📦 Products/Categories**: Catálogo de produtos organizados
+- **🛒 Orders**: Pedidos com status e rastreamento
+- **💳 Payments**: Transações e status de pagamento
+
+#### Relacionamentos
+
+```mermaid
+erDiagram
+    STORE ||--o{ TOTEM : has
+    STORE ||--o{ ORDER : manages
+    CUSTOMER ||--o{ ORDER : makes
+    ORDER ||--o{ ORDER_ITEM : contains
+    PRODUCT ||--o{ ORDER_ITEM : included_in
+    CATEGORY ||--o{ PRODUCT : groups
+    ORDER ||--|| PAYMENT : generates
+```
+
+#### Configuração AWS RDS
+
+- **Engine**: PostgreSQL 14+
+- **Instance**: Multi-AZ para alta disponibilidade
+- **Backup**: Snapshots automáticos daily
+- **Security**: VPC private subnets apenas
+- **Monitoring**: CloudWatch metrics habilitado
+
+**🔗 Modelo Completo**: [BrModelo Web](https://app.brmodeloweb.com/#!/publicview/68213be2acb39fc7c317bb53)
+
+---
+
+**🏢 FIAP Tech Challenge | 🎯 Fase 5 | ☁️ AWS Cloud**
