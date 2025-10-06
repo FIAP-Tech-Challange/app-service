@@ -39,6 +39,8 @@ jobs:
   build-and-push-image:
     name: 📦 Build and Push to ECR
     runs-on: ubuntu-latest
+    outputs:
+      terraform_bucket: ${{ steps.build-and-push-image.outputs.bucket_name }}
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
@@ -55,6 +57,30 @@ jobs:
 
       - name: ✅ Verify AWS Identity
         run: aws sts get-caller-identity
+
+      - name: Create S3 Bucket for Terraform State
+        id: bootstrap
+        run: |
+          BUCKET_PREFIX="terraform-state"
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "AWS Account ID: $ACCOUNT_ID"
+
+          REGION="us-east-1"
+          BUCKET_NAME="${BUCKET_PREFIX}-${ACCOUNT_ID}"
+          echo "S3 bucket name: $BUCKET_NAME"
+
+          # Check if bucket exists, create if not
+          echo "Checking S3 bucket..."
+          if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+            echo "S3 bucket '$BUCKET_NAME' already exists"
+          else
+            echo "Creating S3 bucket '$BUCKET_NAME'..."
+            aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$REGION"
+            echo "S3 bucket '$BUCKET_NAME' created successfully"
+          fi
+
+          echo "Bootstrap finished. Bucket: $BUCKET_NAME"
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
       - name: 📎 Fetch DB Parameters from SSM
         id: ssm-params
@@ -101,6 +127,11 @@ jobs:
             --build-arg JWT_REFRESH_TOKEN_EXPIRATION_TIME=${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION_TIME }} \
             --tag ${{ steps.tags.outputs.image_tags }} \
             --push .
+
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          echo "terraform_bucket=$BUCKET_NAME" >> $GITHUB_OUTPUT
 
   deploy-to-eks:
     name: ☁️ Deploy to EKS with Terraform
@@ -163,7 +194,7 @@ jobs:
         run: |
           cd terraform
           echo "🔧 Inicializando Terraform..."
-          terraform init
+          terraform init -backend-config="bucket=${{ needs.build-and-push-image.outputs.bucket_name }}"
           echo "✅ Terraform inicializado"
 
       - name: 📊 Log Terraform Variables
