@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { CustomerDataSourceDTO } from 'src/common/dataSource/DTOs/customerDataSource.dto';
 import { CustomerGatewayDataSource } from './CustomerGatewayDataSource';
 import 'dotenv/config';
