@@ -16,6 +16,11 @@ variable "ecr_repository_url" {
   type        = string
 }
 
+variable "image_tag" {
+  description = "Tag da imagem Docker"
+  type        = string
+}
+
 variable "jwt_secret" {
   description = "Secret para JWT"
   type        = string
