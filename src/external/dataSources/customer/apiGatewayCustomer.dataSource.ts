@@ -23,7 +23,7 @@ export class ApiGatewayCustomerDataSource implements CustomerGatewayDataSource {
       );
     }
 
-    const response = await fetch(`${gatewayUrl}/customers?cpf=${cpf}`, {
+    const response = await fetch(`${gatewayUrl}/customers/verify?cpf=${cpf}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

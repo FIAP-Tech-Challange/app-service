@@ -47,7 +47,7 @@ describe('CustomerGatewayDataSource', () => {
 
         expect(result).toEqual(mockCustomer);
         expect(fetch).toHaveBeenCalledWith(
-          'https://api.gateway.com/v1/customers?cpf=12345678901',
+          'https://api.gateway.com/v1/customers/verify?cpf=12345678901',
           {
             method: 'GET',
             headers: {
