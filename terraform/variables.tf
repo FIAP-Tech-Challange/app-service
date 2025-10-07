@@ -63,7 +63,7 @@ variable "jwt_access_token_expiration_time" {
   description = "Tempo de expiração do access token JWT"
   type        = string
 }
- 
+
 variable "jwt_refresh_token_expiration_time" {
   description = "Tempo de expiração do refresh token JWT"
   type        = string
