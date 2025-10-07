@@ -1,4 +1,5 @@
 import { Module, Global } from '@nestjs/common';
+import { ApiGatewayCustomerDataSource } from 'src/external/dataSources/customer/apiGatewayCustomer.dataSource';
 import { DataSourceProxy } from 'src/external/dataSources/dataSource.proxy';
 import { createPostgresGeneralDataSource } from 'src/external/dataSources/general/postgres/createPostgresDataSource';
 import { FakeEmailDataSource } from 'src/external/dataSources/notification/email/fakeEmailDataSource';
@@ -22,10 +23,13 @@ import { FakePaymentDataSource } from 'src/external/dataSources/payment/fake/fak
           new FakeEmailDataSource(),
           new FakeMonitorDataSource(),
         );
+        const customerGatewayDataSource = new ApiGatewayCustomerDataSource();
+
         return new DataSourceProxy(
           generalDataSource,
           paymentDataSource,
           notificationDataSource,
+          customerGatewayDataSource,
         );
       },
     },

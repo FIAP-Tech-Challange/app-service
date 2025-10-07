@@ -13,7 +13,7 @@ import { GeneralDataSource } from 'src/external/dataSources/general/general.data
 import { FakePaymentDataSource } from 'src/external/dataSources/payment/fake/fakePaymentDataSource';
 import {
   createMockGeneralDataSource,
-  createMockNotificationDataSource,
+  createMockNotificationDataSource, createMockCustomerGatewayDataSource
 } from '../../../mock';
 
 describe('ApprovePaymentUseCase', () => {
@@ -28,10 +28,12 @@ describe('ApprovePaymentUseCase', () => {
     const mockNotificationDataSource = createMockNotificationDataSource();
     const fakePaymentDataSource = new FakePaymentDataSource();
 
+    const mockCustomerGatewayDataSource = createMockCustomerGatewayDataSource();
     const dataSource = new DataSourceProxy(
       mockGeneralDataSource,
       fakePaymentDataSource,
       mockNotificationDataSource,
+      mockCustomerGatewayDataSource,
     );
 
     paymentGateway = new PaymentGateway(dataSource);

@@ -16,12 +16,14 @@ import { OrderFilteredDto } from 'src/core/modules/order/DTOs/order-filtered.dto
 import { ProductDataSourceDTO } from 'src/common/dataSource/DTOs/productDataSource.dto';
 import { NotificationDataSourceDTO } from 'src/common/dataSource/DTOs/notificationDataSource.dto';
 import { NotificationDataSource } from './notification/notification.dataSource';
+import { CustomerGatewayDataSource } from './customer/CustomerGatewayDataSource';
 
 export class DataSourceProxy implements DataSource {
   constructor(
     private generalDataSource: GeneralDataSource,
     private paymentDataSource: PaymentDataSource,
     private notificationDataSource: NotificationDataSource,
+    private customerGatewayDataSource: CustomerGatewayDataSource,
   ) {}
   // Order
   saveOrder(order: OrderDataSourceDto): Promise<OrderDataSourceDto> {
@@ -123,76 +125,8 @@ export class DataSourceProxy implements DataSource {
     return this.generalDataSource.findCustomerById(id);
   }
 
-  async findCustomerByCpf(cpf: string): Promise<CustomerDataSourceDTO | null> {
-    try {
-      return await this.fetchCustomerFromGateway(cpf);
-    } catch (error) {
-      console.error('Error fetching customer from gateway:', error);
-      return null;
-    }
-  }
-
-  private async fetchCustomerFromGateway(
-    cpf: string,
-  ): Promise<CustomerDataSourceDTO | null> {
-    const gatewayUrl = process.env.CUSTOMERS_GATEWAY_URL;
-    const authorizerKey = process.env.AUTHORIZER_KEY;
-
-    if (!gatewayUrl || !authorizerKey) {
-      throw new Error(
-        'Missing gateway configuration: CUSTOMERS_GATEWAY_URL or AUTHORIZER_KEY',
-      );
-    }
-
-    const response = await fetch(`${gatewayUrl}/customers?cpf=${cpf}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        authorizer: authorizerKey,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error(
-        `Gateway request failed: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const data: unknown = await response.json();
-    return this.validateCustomerResponse(data);
-  }
-
-  private validateCustomerResponse(
-    data: unknown,
-  ): CustomerDataSourceDTO | null {
-    if (!data || typeof data !== 'object') {
-      return null;
-    }
-
-    const customer = data as Record<string, unknown>;
-
-    if (
-      typeof customer.id === 'string' &&
-      typeof customer.cpf === 'string' &&
-      typeof customer.name === 'string' &&
-      typeof customer.email === 'string' &&
-      typeof customer.createdAt === 'string' &&
-      typeof customer.updatedAt === 'string'
-    ) {
-      return {
-        id: customer.id,
-        cpf: customer.cpf,
-        name: customer.name,
-        email: customer.email,
-        createdAt: customer.createdAt,
-        updatedAt: customer.updatedAt,
-      };
-    }
-
-    return null;
+  findCustomerByCpf(cpf: string): Promise<CustomerDataSourceDTO | null> {
+    return this.customerGatewayDataSource.findCustomerByCpf(cpf);
   }
 
   findCustomerByEmail(email: string): Promise<CustomerDataSourceDTO | null> {
