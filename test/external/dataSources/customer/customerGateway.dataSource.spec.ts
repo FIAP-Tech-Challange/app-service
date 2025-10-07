@@ -36,10 +36,15 @@ describe('CustomerGatewayDataSource', () => {
   describe('findCustomerByCpf', () => {
     describe('when gateway returns customer successfully', () => {
       it('should return customer data', async () => {
+        const mockGatewayResponse = {
+          success: true,
+          data: mockCustomer,
+        };
+
         (fetch as jest.Mock).mockResolvedValue({
           ok: true,
           status: 200,
-          json: () => Promise.resolve(mockCustomer),
+          json: () => Promise.resolve(mockGatewayResponse),
         });
 
         const result =
@@ -52,7 +57,7 @@ describe('CustomerGatewayDataSource', () => {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
-              authorizer: 'test-auth-key',
+              Authorization: 'test-auth-key',
             },
           },
         );
