@@ -101,7 +101,7 @@ jobs:
       - name: 🏷️ Define Image Tags
         id: tags
         run: |
-          COMMIT_HASH=${{ github.sha }}
+          COMMIT_HASH=${{ github.sha }} | cut -c1-7)
           ECR_URL=${{ secrets.ECR_REPOSITORY_URL }} # Usa a URL do repositório a partir dos segredos
 
           TAGS="${ECR_URL}:${COMMIT_HASH}"
