@@ -1,5 +1,6 @@
 import { CustomerDataSourceDTO } from 'src/common/dataSource/DTOs/customerDataSource.dto';
 import { CustomerGatewayDataSource } from './CustomerGatewayDataSource';
+import 'dotenv/config';
 
 export class ApiGatewayCustomerDataSource implements CustomerGatewayDataSource {
   async findCustomerByCpf(cpf: string): Promise<CustomerDataSourceDTO | null> {
@@ -27,11 +28,13 @@ export class ApiGatewayCustomerDataSource implements CustomerGatewayDataSource {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        authorizer: authorizerKey,
+        Authorization: authorizerKey,
       },
     });
 
-    if (!response.ok) {
+    const data = await response.json();
+
+    if (!data.success) {
       if (response.status === 404) {
         return null;
       }
@@ -40,8 +43,7 @@ export class ApiGatewayCustomerDataSource implements CustomerGatewayDataSource {
       );
     }
 
-    const data: unknown = await response.json();
-    return this.validateCustomerResponse(data);
+    return this.validateCustomerResponse(data.data);
   }
 
   private validateCustomerResponse(
