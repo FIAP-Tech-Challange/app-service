@@ -1,4 +1,4 @@
-# 🍔 App Service - API de Autoatendimento
+# 🍔 App Service - API de Autoatendimento  
 
 [![Build and Push to ECR](https://github.com/FIAP-Tech-Challange/app-service/actions/workflows/ci.yml/badge.svg)](https://github.com/FIAP-Tech-Challange/app-service/actions/workflows/ci.yml)
 
