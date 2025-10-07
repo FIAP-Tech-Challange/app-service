@@ -280,7 +280,7 @@ jobs:
           echo "📋 Planejando mudanças no Terraform..."
           terraform plan -no-color
           echo "✅ Plano criado"
-
+ 
       - name: 🚀 Terraform Apply
         env:
           TF_VAR_eks_cluster_name: ${{ secrets.EKS_CLUSTER_NAME }}

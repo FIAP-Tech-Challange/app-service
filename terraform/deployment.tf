@@ -26,6 +26,7 @@ resource "kubernetes_deployment" "tech_challenge_app" {
         }
       }
 
+
       spec {
         container {
           name              = "tech-challenge"
