@@ -101,7 +101,7 @@ jobs:
       - name: 🏷️ Define Image Tags
         id: tags
         run: |
-          COMMIT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          COMMIT_HASH=${{ github.sha }}
           ECR_URL=${{ secrets.ECR_REPOSITORY_URL }} # Usa a URL do repositório a partir dos segredos
 
           TAGS="${ECR_URL}:${COMMIT_HASH}"
@@ -208,6 +208,7 @@ jobs:
         env:
           TF_VAR_eks_cluster_name: ${{ secrets.EKS_CLUSTER_NAME }}
           TF_VAR_ecr_repository_url: ${{ secrets.ECR_REPOSITORY_URL }}
+          TF_VAR_image_tag: ${{ github.sha }}
           TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
           TF_VAR_api_key: ${{ secrets.API_KEY }}
           TF_VAR_db_pg_name: ${{ secrets.DB_PG_NAME }}
@@ -222,6 +223,7 @@ jobs:
           echo "📋 Variáveis carregadas:"
           echo "  🏗️  EKS Cluster: ${TF_VAR_eks_cluster_name:-❌ NÃO DEFINIDA}"
           echo "  📦 ECR Repository: ${TF_VAR_ecr_repository_url:-❌ NÃO DEFINIDA}"
+          echo "  🏷️  Image Tag: ${TF_VAR_image_tag:-❌ NÃO DEFINIDA}"
           echo "  �️  DB Name: ${TF_VAR_db_pg_name:-❌ NÃO DEFINIDA}"
           echo "  🔌 DB Port: ${TF_VAR_db_pg_port:-❌ NÃO DEFINIDA}"
           echo "  ⏰ JWT Access TTL: ${TF_VAR_jwt_access_token_expiration_time:-❌ NÃO DEFINIDA}"
@@ -238,6 +240,7 @@ jobs:
 
           [[ -z "$TF_VAR_eks_cluster_name" ]] && MISSING_VARS="$MISSING_VARS EKS_CLUSTER_NAME"
           [[ -z "$TF_VAR_ecr_repository_url" ]] && MISSING_VARS="$MISSING_VARS ECR_REPOSITORY_URL"
+          [[ -z "$TF_VAR_image_tag" ]] && MISSING_VARS="$MISSING_VARS IMAGE_TAG"
           [[ -z "$TF_VAR_jwt_secret" ]] && MISSING_VARS="$MISSING_VARS JWT_SECRET"
           [[ -z "$TF_VAR_api_key" ]] && MISSING_VARS="$MISSING_VARS API_KEY"
           [[ -z "$TF_VAR_db_pg_name" ]] && MISSING_VARS="$MISSING_VARS DB_PG_NAME"
@@ -260,6 +263,7 @@ jobs:
         env:
           TF_VAR_eks_cluster_name: ${{ secrets.EKS_CLUSTER_NAME }}
           TF_VAR_ecr_repository_url: ${{ secrets.ECR_REPOSITORY_URL }}
+          TF_VAR_image_tag: ${{ github.sha }}
           TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
           TF_VAR_api_key: ${{ secrets.API_KEY }}
           TF_VAR_db_pg_name: ${{ secrets.DB_PG_NAME }}
@@ -281,6 +285,7 @@ jobs:
         env:
           TF_VAR_eks_cluster_name: ${{ secrets.EKS_CLUSTER_NAME }}
           TF_VAR_ecr_repository_url: ${{ secrets.ECR_REPOSITORY_URL }}
+          TF_VAR_image_tag: ${{ github.sha }}
           TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
           TF_VAR_api_key: ${{ secrets.API_KEY }}
           TF_VAR_db_pg_name: ${{ secrets.DB_PG_NAME }}
