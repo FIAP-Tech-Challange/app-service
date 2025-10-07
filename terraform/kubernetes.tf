@@ -27,6 +27,8 @@ resource "kubernetes_config_map" "tech_challenge_config" {
     DB_PG_LOGGING                      = "false"
     JWT_ACCESS_TOKEN_EXPIRATION_TIME   = var.jwt_access_token_expiration_time
     JWT_REFRESH_TOKEN_EXPIRATION_TIME  = var.jwt_refresh_token_expiration_time
+    CUSTOMERS_GATEWAY_URL              = var.customers_gateway_url
+    AUTHORIZER_KEY                     = var.authorizer_key
   }
 }
 
