@@ -63,3 +63,13 @@ variable "jwt_refresh_token_expiration_time" {
   description = "Tempo de expiração do refresh token JWT"
   type        = string
 }
+
+variable "customers_gateway_url" {
+  description = "Gateway para acessar o get customers by cpf"
+  type        = string
+}
+
+variable "authorizer_key" {
+  description = "Chave do autorizador do gateway"
+  type        = string
+}
