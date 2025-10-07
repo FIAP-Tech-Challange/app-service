@@ -16,12 +16,14 @@ import { OrderFilteredDto } from 'src/core/modules/order/DTOs/order-filtered.dto
 import { ProductDataSourceDTO } from 'src/common/dataSource/DTOs/productDataSource.dto';
 import { NotificationDataSourceDTO } from 'src/common/dataSource/DTOs/notificationDataSource.dto';
 import { NotificationDataSource } from './notification/notification.dataSource';
+import { CustomerGatewayDataSource } from './customer/CustomerGatewayDataSource';
 
 export class DataSourceProxy implements DataSource {
   constructor(
     private generalDataSource: GeneralDataSource,
     private paymentDataSource: PaymentDataSource,
     private notificationDataSource: NotificationDataSource,
+    private customerGatewayDataSource: CustomerGatewayDataSource,
   ) {}
   // Order
   saveOrder(order: OrderDataSourceDto): Promise<OrderDataSourceDto> {
@@ -122,9 +124,11 @@ export class DataSourceProxy implements DataSource {
   findCustomerById(id: string): Promise<CustomerDataSourceDTO | null> {
     return this.generalDataSource.findCustomerById(id);
   }
+
   findCustomerByCpf(cpf: string): Promise<CustomerDataSourceDTO | null> {
-    return this.generalDataSource.findCustomerByCpf(cpf);
+    return this.customerGatewayDataSource.findCustomerByCpf(cpf);
   }
+
   findCustomerByEmail(email: string): Promise<CustomerDataSourceDTO | null> {
     return this.generalDataSource.findCustomerByEmail(email);
   }

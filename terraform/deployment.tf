@@ -29,7 +29,7 @@ resource "kubernetes_deployment" "tech_challenge_app" {
       spec {
         container {
           name              = "tech-challenge"
-          image             = "${var.ecr_repository_url}:latest"
+          image             = "${var.ecr_repository_url}:${var.image_tag}"
           image_pull_policy = "Always"
 
           port {

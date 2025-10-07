@@ -12,6 +12,7 @@ import { GeneralDataSource } from 'src/external/dataSources/general/general.data
 import { FakePaymentDataSource } from 'src/external/dataSources/payment/fake/fakePaymentDataSource';
 import { NotificationDataSource } from 'src/external/dataSources/notification/notification.dataSource';
 import { createMockGeneralDataSource } from '../../../mock/generalDataSource.mock';
+import { createMockCustomerGatewayDataSource } from '../../../mock/customerGatewayDataSource.mock';
 
 describe('ValidateStorePasswordUseCase', () => {
   let useCase: ValidateStorePasswordUseCase;
@@ -30,10 +31,12 @@ describe('ValidateStorePasswordUseCase', () => {
     };
 
     const fakePaymentDataSource = new FakePaymentDataSource();
+    const mockCustomerGatewayDataSource = createMockCustomerGatewayDataSource();
     const dataSource = new DataSourceProxy(
       mockGeneralDataSource,
       fakePaymentDataSource,
       mockNotificationDataSource,
+      mockCustomerGatewayDataSource,
     );
 
     storeGateway = new StoreGateway(dataSource);

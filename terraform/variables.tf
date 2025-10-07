@@ -16,6 +16,11 @@ variable "ecr_repository_url" {
   type        = string
 }
 
+variable "image_tag" {
+  description = "Tag da imagem Docker"
+  type        = string
+}
+
 variable "jwt_secret" {
   description = "Secret para JWT"
   type        = string
@@ -61,5 +66,15 @@ variable "jwt_access_token_expiration_time" {
 
 variable "jwt_refresh_token_expiration_time" {
   description = "Tempo de expiração do refresh token JWT"
+  type        = string
+}
+
+variable "customers_gateway_url" {
+  description = "Gateway para acessar o get customers by cpf"
+  type        = string
+}
+
+variable "authorizer_key" {
+  description = "Chave do autorizador do gateway"
   type        = string
 }

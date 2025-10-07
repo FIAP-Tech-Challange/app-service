@@ -13,7 +13,7 @@ import { GeneralDataSource } from 'src/external/dataSources/general/general.data
 import { FakePaymentDataSource } from 'src/external/dataSources/payment/fake/fakePaymentDataSource';
 import {
   createMockGeneralDataSource,
-  createMockNotificationDataSource,
+  createMockNotificationDataSource, createMockCustomerGatewayDataSource
 } from '../../../mock';
 
 describe('AddTotemUseCase', () => {
@@ -29,10 +29,12 @@ describe('AddTotemUseCase', () => {
     const mockNotificationDataSource = createMockNotificationDataSource();
 
     const fakePaymentDataSource = new FakePaymentDataSource();
+    const mockCustomerGatewayDataSource = createMockCustomerGatewayDataSource();
     const dataSource = new DataSourceProxy(
       mockGeneralDataSource,
       fakePaymentDataSource,
       mockNotificationDataSource,
+      mockCustomerGatewayDataSource,
     );
 
     storeGateway = new StoreGateway(dataSource);
